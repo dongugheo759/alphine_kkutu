@@ -73,4 +73,29 @@
         function kkutuGame() {
             return {
                 socket: null, page: 'title', nickname: '', adminPass: '',
-                isDeveloper: false, currentWord
+                isDeveloper: false, currentWord: this.isDeveloper 
+                        });
+                        this.page = 'game';
+                    });
+
+                    this.socket.on("init_state", (data) => {
+                        this.currentWord = data.word;
+                        this.userList = data.users;
+                    });
+
+                    this.socket.on("word_success", (data) => {
+                        this.currentWord = data.word;
+                        this.userList = data.users;
+                        this.inputWord = '';
+                    });
+                },
+
+                sendWord() {
+                    if(this.inputWord.length < 2) return;
+                    this.socket.emit("submit_word", { word: this.inputWord });
+                }
+            }
+        }
+    </script>
+</body>
+</html>
