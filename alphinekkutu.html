@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>알파인 끄투</title>
+    <title>알파인 끄투 - kkutu.org</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -17,10 +17,18 @@
     <div class="h-screen flex items-center justify-center p-4">
         <template x-if="page === 'title'">
             <div class="w-full max-w-md bg-white p-8 rounded-3xl shadow-2xl border-4 border-yellow-400 text-center">
-                <h1 class="text-6xl font-black text-yellow-500 mb-6">Alpine KKUTU</h1>
-                <input type="text" x-model="nickname" placeholder="닉네임" class="w-full p-4 border rounded-xl mb-2 outline-none">
-                <input type="password" x-model="adminPass" placeholder="개발자 비번" class="w-full p-4 border rounded-xl mb-1 outline-none">
-                <p class="text-[10px] text-purple-500 mb-6 font-bold">* 비번: ak_@dev_99!</p>
+                <h1 @click="clickCount++; if(clickCount >= 5) showAdmin = true" 
+                    class="text-6xl font-black text-yellow-500 mb-6 cursor-default select-none transition-transform active:scale-95">
+                    Alpine KKUTU
+                </h1>
+                
+                <input type="text" x-model="nickname" placeholder="닉네임" class="w-full p-4 border rounded-xl mb-4 outline-none">
+                
+                <div x-show="showAdmin" x-transition class="mb-4">
+                    <input type="password" x-model="adminPass" placeholder="보안 코드 입력" 
+                           class="w-full p-4 border-2 border-purple-300 rounded-xl outline-none focus:border-purple-500">
+                </div>
+
                 <button @click="connectToServer()" class="w-full py-4 bg-yellow-400 text-white text-2xl rounded-2xl font-bold">접속하기</button>
             </div>
         </template>
@@ -47,10 +55,9 @@
                         <p class="text-gray-400 mb-2 font-bold">제시어</p>
                         <h2 class="text-8xl font-black text-blue-600" x-text="currentWord"></h2>
                         <template x-if="isDeveloper">
-                            <p class="mt-4 text-purple-600 animate-pulse font-bold">🛠️ 치트 모드 작동 중</p>
+                            <p class="mt-4 text-purple-600 animate-pulse font-bold">🛠️ DEVELOPER MODE ACTIVE</p>
                         </template>
                     </div>
-
                     <div class="p-6 bg-white border-t">
                         <input type="text" x-model="inputWord" @keyup.enter="sendWord()" placeholder="단어를 입력하세요!" 
                                class="w-full p-5 bg-blue-50 border-2 border-blue-200 rounded-2xl text-2xl outline-none focus:border-blue-500">
@@ -64,37 +71,3 @@
         function kkutuGame() {
             return {
                 socket: null, page: 'title', nickname: '', adminPass: '',
-                isDeveloper: false, currentWord: '', inputWord: '', userList: [],
-                
-                connectToServer() {
-                    if(!this.nickname) return alert("닉네임을 입력하세요!");
-                    if(this.adminPass === 'ak_@dev_99!') this.isDeveloper = true;
-
-                    this.socket = io(); // HTTPS 혼합 콘텐츠 방지를 위해 비워둠
-
-                    this.socket.on("connect", () => {
-                        this.socket.emit("join", { nickname: this.nickname, isDeveloper: this.isDeveloper });
-                        this.page = 'game';
-                    });
-
-                    this.socket.on("init_state", (data) => {
-                        this.currentWord = data.word;
-                        this.userList = data.users;
-                    });
-
-                    this.socket.on("word_success", (data) => {
-                        this.currentWord = data.word;
-                        this.userList = data.users;
-                        this.inputWord = '';
-                    });
-                },
-
-                sendWord() {
-                    if(this.inputWord.length < 2) return alert("두 글자 이상 입력하세요!");
-                    this.socket.emit("submit_word", { word: this.inputWord });
-                }
-            }
-        }
-    </script>
-</body>
-</html>
