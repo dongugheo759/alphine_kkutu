@@ -63,3 +63,57 @@
                 </div>
             </div>
         </div>
+
+        </div>
+
+    <script>
+        function kkutuGame() {
+            return {
+                socket: null,
+                page: 'title',
+                nickname: '',
+                isDeveloper: false,
+                currentWord: '알파인',
+                inputWord: '',
+                userList: [],
+                clickCount: 0,
+                
+                connectToServer() {
+                    if(!this.nickname) return alert("닉네임을 적어주세요!");
+
+                    // 소켓 연결 (현재 주소 자동 사용)
+                    this.socket = io(); 
+
+                    this.socket.on("connect", () => {
+                        this.socket.emit("join", { 
+                            nickname: this.nickname, 
+                            isDeveloper: this.isDeveloper 
+                        });
+                        this.page = 'game';
+                    });
+
+                    this.socket.on("init_state", (data) => {
+                        this.currentWord = data.word;
+                        this.userList = data.users;
+                    });
+
+                    this.socket.on("word_success", (data) => {
+                        this.currentWord = data.word;
+                        this.userList = data.users;
+                        this.inputWord = '';
+                    });
+
+                    this.socket.on("connect_error", (err) => {
+                        alert("서버 연결에 실패했습니다.");
+                    });
+                },
+
+                sendWord() {
+                    if(this.inputWord.length < 2) return;
+                    this.socket.emit("submit_word", { word: this.inputWord });
+                }
+            }
+        }
+    </script>
+</body>
+</html>
