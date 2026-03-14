@@ -9,7 +9,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
         body { font-family: 'Jua', sans-serif; background-color: #f0f2f5; }
-        .developer-badge { background: linear-gradient(45deg, #7c3aed, #db2777); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; margin-left: 6px; }
+        .developer-badge { background: linear-gradient(45deg, #7c3aed, #db2777); color: white; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; margin-left: 6px; font-weight: bold; }
     </style>
 </head>
 <body x-data="kkutuGame()">
@@ -20,19 +20,22 @@
                 <h1 class="text-6xl font-black text-yellow-500 mb-6">Alpine KKUTU</h1>
                 <input type="text" x-model="nickname" placeholder="닉네임" class="w-full p-4 border rounded-xl mb-2 outline-none">
                 <input type="password" x-model="adminPass" placeholder="개발자 비번" class="w-full p-4 border rounded-xl mb-1 outline-none">
-                <p class="text-[10px] text-purple-500 mb-6 font-bold">* 올바른 비번 입력 시 개발자 전용 뱃지 및 치트 해금</p>
+                <p class="text-[10px] text-purple-500 mb-6 font-bold">* 비번: ak_@dev_99!</p>
                 <button @click="connectToServer()" class="w-full py-4 bg-yellow-400 text-white text-2xl rounded-2xl font-bold">접속하기</button>
             </div>
         </template>
 
         <template x-if="page === 'game'">
             <div class="w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden flex h-[600px] border-4 border-blue-400">
-                <div class="w-1/4 bg-gray-50 p-6 border-r">
-                    <h3 class="font-bold mb-4 border-b">참가자</h3>
+                <div class="w-1/4 bg-gray-50 p-6 border-r overflow-y-auto">
+                    <h3 class="font-bold mb-4 border-b pb-2">참가자</h3>
                     <div class="space-y-2">
                         <template x-for="u in userList">
                             <div class="p-2 bg-white rounded-lg shadow-sm flex justify-between items-center">
-                                <span class="text-sm font-bold" x-text="u.nickname"></span>
+                                <div class="flex items-center">
+                                    <span class="text-sm font-bold" x-text="u.nickname"></span>
+                                    <template x-if="u.dev"><span class="developer-badge">DEV</span></template>
+                                </div>
                                 <span class="text-xs text-blue-500" x-text="u.score"></span>
                             </div>
                         </template>
@@ -40,13 +43,12 @@
                 </div>
 
                 <div class="w-3/4 flex flex-col relative">
-                    <template x-if="isDeveloper">
-                        <div class="bg-purple-900 text-white text-[10px] p-1 text-center">DEVELOPER MODE ACTIVE</div>
-                    </template>
-                    
                     <div class="flex-1 flex flex-col items-center justify-center bg-gray-50">
-                        <p class="text-gray-400 mb-2">제시어</p>
+                        <p class="text-gray-400 mb-2 font-bold">제시어</p>
                         <h2 class="text-8xl font-black text-blue-600" x-text="currentWord"></h2>
+                        <template x-if="isDeveloper">
+                            <p class="mt-4 text-purple-600 animate-pulse font-bold">🛠️ 치트 모드 작동 중</p>
+                        </template>
                     </div>
 
                     <div class="p-6 bg-white border-t">
@@ -61,27 +63,17 @@
     <script>
         function kkutuGame() {
             return {
-                socket: null,
-                page: 'title',
-                nickname: '',
-                adminPass: '',
-                isDeveloper: false,
-                currentWord: '',
-                inputWord: '',
-                userList: [],
+                socket: null, page: 'title', nickname: '', adminPass: '',
+                isDeveloper: false, currentWord: '', inputWord: '', userList: [],
                 
                 connectToServer() {
-                    if(!this.nickname) return alert("닉네임!");
+                    if(!this.nickname) return alert("닉네임을 입력하세요!");
                     if(this.adminPass === 'ak_@dev_99!') this.isDeveloper = true;
 
-                    // 실제 도메인 주소로 연결
-                    this.socket = io("http://kkutu.org");
+                    this.socket = io(); // HTTPS 혼합 콘텐츠 방지를 위해 비워둠
 
                     this.socket.on("connect", () => {
-                        this.socket.emit("join", { 
-                            nickname: this.nickname, 
-                            isDeveloper: this.isDeveloper 
-                        });
+                        this.socket.emit("join", { nickname: this.nickname, isDeveloper: this.isDeveloper });
                         this.page = 'game';
                     });
 
@@ -92,15 +84,13 @@
 
                     this.socket.on("word_success", (data) => {
                         this.currentWord = data.word;
-                        // 점수 업데이트 로직
-                        const user = this.userList.find(u => u.nickname === data.nickname);
-                        if(user) user.score = data.score;
+                        this.userList = data.users;
                         this.inputWord = '';
                     });
                 },
 
                 sendWord() {
-                    if(this.inputWord.length < 2) return;
+                    if(this.inputWord.length < 2) return alert("두 글자 이상 입력하세요!");
                     this.socket.emit("submit_word", { word: this.inputWord });
                 }
             }
